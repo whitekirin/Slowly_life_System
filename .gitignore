@@ -1,0 +1,38 @@
+.backup/
+.env
+.env.production
+.env.test
+backend/__pycache__/
+backend/static/uploads/
+backend/database.db
+backend/system_audit.log
+frontend/node_modules/
+frontend/dist/
+
+# 機密與環境設定（.env.example 這類範本要保留）
+.env.*
+!.env.example
+!.env.production.example
+!frontend/.env.example
+*.pem
+*.key
+
+# 使用者上傳檔、資料庫、備份、log——可能含個資，不進版控
+static/
+uploads/
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql
+*.log
+*.ndjson
+
+# 除錯／暫存
+.dbg/
+.venv/
+__pycache__/
+.pytest_cache/
+/*.png
+/*.jpg
+/*.jpeg

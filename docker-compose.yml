@@ -1,0 +1,77 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No "ports:" — only reachable from other containers on this compose network,
+    # never exposed to the public internet.
+
+  app:
+    build:
+      context: .
+      # Only VITE_LIFF_ID needs to reach the frontend build stage — the API base
+      # URL doesn't, because production is same-origin (see liffApi.ts). Rebuild
+      # after changing LIFF_ID; a plain restart won't pick it up since it's baked in at build time.
+      args:
+        VITE_LIFF_ID: ${LIFF_ID}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # 後端到處用 datetime.now() 記時間（記帳單日期、出貨日…），記帳按月分帳也以此為準；
+      # 不設的話容器是 UTC，台灣時間每月 1 號 00:00–08:00 的帳會被算進上個月。
+      TZ: Asia/Taipei
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      FRONTEND_BASE_URL: https://${DOMAIN}
+      PUBLIC_BASE_URL: https://${DOMAIN}
+      CORS_ORIGINS: https://${DOMAIN}
+      LINE_CHANNEL_ID: ${LINE_CHANNEL_ID}
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
+      LINE_LOGIN_CALLBACK_URL: https://${DOMAIN}/line/callback
+      LINE_MESSAGING_ACCESS_TOKEN: ${LINE_MESSAGING_ACCESS_TOKEN}
+      LINE_MESSAGING_CHANNEL_SECRET: ${LINE_MESSAGING_CHANNEL_SECRET:-}
+      LINE_SUPPRESS_SEND: ${LINE_SUPPRESS_SEND:-true}
+      LIFF_ID: ${LIFF_ID}
+      LIFF_CHANNEL_ID: ${LIFF_CHANNEL_ID}
+    volumes:
+      - uploads:/app/backend/static/uploads
+    expose:
+      - "8000"
+    # No "ports:" at all — the app is reachable only from other containers on
+    # this compose network. Public exposure goes through cloudflared below,
+    # which makes an outbound-only connection to Cloudflare's edge, so the
+    # router/firewall never needs 80/443 (or any port) forwarded.
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # --protocol http2: cloudflared defaults to QUIC (UDP), which some network
+    # paths silently drop after a period of inactivity, causing periodic
+    # "no recent network activity" disconnects/reconnects (visible in this
+    # container's logs) and occasional 502s from Cloudflare's edge for
+    # whatever request lands during the reconnect window. HTTP/2 runs over
+    # TCP, which is far less likely to be dropped by intermediate network
+    # equipment — the standard Cloudflare-recommended fix for this symptom.
+    command: tunnel --no-autoupdate --protocol http2 run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - app
+    # No "ports:" — cloudflared dials out to Cloudflare, nothing listens
+    # publicly on this host. The tunnel's public hostname -> service mapping
+    # (slowlyshops.com -> http://app:8000) is configured in the Cloudflare
+    # Zero Trust dashboard, not here.
+
+volumes:
+  pgdata:
+  uploads:

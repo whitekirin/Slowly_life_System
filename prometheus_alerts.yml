@@ -1,0 +1,20 @@
+groups:
+  - name: email_delivery_alerts
+    rules:
+      - alert: HighEmailBounceRate
+        expr: sum(rate(email_bounced_total[5m])) / sum(rate(email_sent_total[5m]) + rate(email_bounced_total[5m])) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Email Bounce Rate Detected"
+          description: "The email bounce rate has exceeded 2% over the last 5 minutes."
+
+      - alert: ConsecutiveEmailFailures
+        expr: increase(email_failed_total[1m]) >= 3
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consecutive Email Sending Failures"
+          description: "3 or more email delivery failures detected in the last minute. Check SMTP configuration."

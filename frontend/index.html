@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#F5EFE6" />
+    <title>慢生活製造所｜電商管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Startup Diagnosis Script
+      window.addEventListener('error', function(event) {
+        console.error('Global Script Error:', event.message, event.filename, event.lineno);
+        const errorDiv = document.getElementById('startup-error');
+        if (!errorDiv) {
+            const div = document.createElement('div');
+            div.id = 'startup-error';
+            div.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:rgba(255,0,0,0.9);color:white;padding:20px;z-index:9999;font-family:monospace;';
+            div.innerHTML = '<h3>Critical Startup Error</h3><pre>' + event.message + '\n' + event.filename + ':' + event.lineno + '</pre><button onclick="localStorage.clear();window.location.reload()">Clear Cache & Reload</button>';
+            document.body.appendChild(div);
+        }
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

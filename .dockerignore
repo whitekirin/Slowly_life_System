@@ -1,0 +1,14 @@
+.venv
+__pycache__
+*.pyc
+.git
+.claude
+.backup
+.dbg
+node_modules
+frontend/dist
+frontend/node_modules
+backend/database.db
+*.log
+.env
+.env.production
